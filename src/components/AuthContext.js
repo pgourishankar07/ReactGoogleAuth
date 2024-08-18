@@ -1,26 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-
-const AuthContext = createContext();
-
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+import { jwtDecode } from "jwt-decode";
+import React from "react";
+export const AuthContext = React.createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = React.useState(null);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
-  // Load user info from local storage on app startup
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
     }
   }, []);
 
   const loginWithGoogle = (response) => {
-    const userInfo = response; // Adjust based on what you need from the response
+    const token = response.credential; // JWT token
+    const decoded = jwtDecode(token);
+    const userInfo = {
+      name: decoded.name || "User", // Adjust according to the JWT claims
+      email: decoded.email,
+      // Add other fields as needed
+    };
     setUser(userInfo);
     setIsAuthenticated(true);
     localStorage.setItem("user", JSON.stringify(userInfo));
@@ -34,9 +35,11 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, loginWithGoogle, logout }}
+      value={{ user, isAuthenticated, loginWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => React.useContext(AuthContext);
